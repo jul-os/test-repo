@@ -59,3 +59,24 @@ TEST(CandleTest, Contains_DegenerateCandle_HighEqualsLow)
     EXPECT_FALSE(c.contains(10.0001));
     EXPECT_FALSE(c.contains(9.9999));
 }
+
+// 3 теста для метода full_size
+
+TEST(CandleTest, FullSize_NormalCandle)
+{
+    Candle c{10.0, 15.0, 5.0, 12.0};
+    EXPECT_NEAR(c.full_size(), 10.0, EPS);
+}
+
+TEST(CandleTest, FullSize_ZeroSize)
+{
+    Candle c{10.0, 10.0, 10.0, 10.0};
+    EXPECT_NEAR(c.full_size(), 0.0, EPS);
+}
+
+TEST(CandleTest, FullSize_Negative)
+{
+    // high is lower than low, not possible but...
+    Candle c{10.0, 5.0, 15.0, 12.0};
+    EXPECT_NEAR(c.full_size(), 10.0, EPS);
+}
