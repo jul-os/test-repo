@@ -100,3 +100,47 @@ TEST(CandleTest, BodySize_Doji)
     Candle c{10.0, 15.0, 5.0, 10.0};
     EXPECT_NEAR(c.body_size(), 0.0, EPS);
 }
+
+// тесты для red & green
+
+TEST(CandleTest, IsRed_True)
+{
+    Candle c{12.0, 15.0, 5.0, 10.0};
+    EXPECT_TRUE(c.is_red());
+    EXPECT_FALSE(c.is_green());
+}
+
+TEST(CandleTest, IsRed_FalseForDoji)
+{
+    Candle c{10.0, 15.0, 5.0, 10.0};
+    EXPECT_FALSE(c.is_red());
+    EXPECT_FALSE(c.is_green());
+}
+
+TEST(CandleTest, IsRed_FalseForGreenCandle)
+{
+    Candle c{10.0, 15.0, 5.0, 12.0};
+    EXPECT_FALSE(c.is_red());
+    EXPECT_TRUE(c.is_green());
+}
+
+TEST(CandleTest, IsGreen_True)
+{
+    Candle c{10.0, 15.0, 5.0, 12.0};
+    EXPECT_TRUE(c.is_green());
+    EXPECT_FALSE(c.is_red());
+}
+
+TEST(CandleTest, IsGreen_FalseForDoji)
+{
+    Candle c{10.0, 15.0, 5.0, 10.0};
+    EXPECT_FALSE(c.is_green());
+    EXPECT_FALSE(c.is_red());
+}
+
+TEST(CandleTest, IsGreen_FalseForRedCandle)
+{
+    Candle c{12.0, 15.0, 5.0, 10.0};
+    EXPECT_FALSE(c.is_green());
+    EXPECT_TRUE(c.is_red());
+}
