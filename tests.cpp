@@ -80,3 +80,23 @@ TEST(CandleTest, FullSize_Negative)
     Candle c{10.0, 5.0, 15.0, 12.0};
     EXPECT_NEAR(c.full_size(), 10.0, EPS);
 }
+
+// 3 теста для метода full_size
+
+TEST(CandleTest, BodySize_GreenCandle)
+{
+    Candle c{10.0, 15.0, 5.0, 12.0};
+    EXPECT_NEAR(c.body_size(), 2.0, EPS);
+}
+
+TEST(CandleTest, BodySize_RedCandle)
+{
+    Candle c{12.0, 15.0, 5.0, 10.0};
+    EXPECT_NEAR(c.body_size(), 2.0, EPS);
+}
+
+TEST(CandleTest, BodySize_Doji)
+{
+    Candle c{10.0, 15.0, 5.0, 10.0};
+    EXPECT_NEAR(c.body_size(), 0.0, EPS);
+}
