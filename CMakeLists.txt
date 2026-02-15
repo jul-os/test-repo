@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.24.2)
 project(testproj CXX)
 
-add_executable(${PROJECT_NAME} main.cpp)
+add_executable(${PROJECT_NAME} main.cpp
+candle.cpp candle.h)
