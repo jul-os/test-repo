@@ -1,0 +1,136 @@
+# .github/workflows/docker-web-tests.yml
+name: Docker Build & Publish
+
+on:
+  push:
+    branches: ["main", "master"] # Запуск при пуше в основную ветку
+  pull_request:
+    branches: ["main", "master"] # Запуск при PR (без пуша в Docker Hub)
+  workflow_dispatch: # Ручной запуск из интерфейса GitHub
+
+env:
+  APP_IMAGE: jul0101os/test-repo-app
+  WEB_IMAGE: jul0101os/test-repo-web
+  # Тег по умолчанию
+  DEFAULT_TAG: latest
+
+jobs:
+  # Сборка и тестирование C++ приложения
+  build-and-test:
+    name: Build & Test App
+    runs-on: ubuntu-latest
+    outputs:
+      app_ready: ${{ steps.check.outputs.ready }}
+    steps:
+      - name: Checkout кода
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Сборка образа app
+        run: |
+          docker build -f Dockerfile.app -t ${{ env.APP_IMAGE }}:test .
+
+      - name: Запуск тестов в контейнере
+        run: |
+          # Запускаем тесты и ловим код возврата
+          set +e
+          docker run --rm ${{ env.APP_IMAGE }}:test > test-output.log 2>&1
+          TEST_EXIT_CODE=$?
+          set -e
+
+          # Показываем лог в любом случае
+          cat test-output.log
+
+          # Если тесты упали — ошибка (кроме PR, где можно сделать warning)
+          if [ $TEST_EXIT_CODE -ne 0 ]; then
+            echo " Тесты не прошли (код: $TEST_EXIT_CODE)"
+            exit $TEST_EXIT_CODE
+          fi
+          echo "Тесты прошли успешно"
+          echo "ready=true" >> $GITHUB_OUTPUT
+
+      - name: Сохранение артефактов (опционально)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-logs
+          path: test-output.log
+          retention-days: 7
+
+  # Сборка веб-образа зависит от успеха тестов
+  build-web:
+    name: Build Web Image
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: github.event_name != 'pull_request' # Не собираем для PR
+    steps:
+      - name: Checkout кода
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Сборка образа web
+        run: |
+          docker build -f Dockerfile.web -t ${{ env.WEB_IMAGE }}:test .
+
+      - name: Проверка образа
+        run: |
+          docker images ${{ env.WEB_IMAGE }}
+
+  # Публикация в Docker Hub только для push в main
+  publish:
+    name: Publish to Docker Hub
+    runs-on: ubuntu-latest
+    needs: [build-and-test, build-web]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout кода
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Подготовка тегов
+        id: tags
+        run: |
+          # Основной тег: latest
+          # Дополнительный: по короткому SHA коммита
+          SHORT_SHA=${GITHUB_SHA::7}
+          echo "app_tags=${{ env.APP_IMAGE }}:latest,${{ env.APP_IMAGE }}:${SHORT_SHA}" >> $GITHUB_OUTPUT
+          echo "web_tags=${{ env.WEB_IMAGE }}:latest,${{ env.WEB_IMAGE }}:${SHORT_SHA}" >> $GITHUB_OUTPUT
+
+      - name: Сборка и пуш образа app
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.app
+          push: true
+          tags: ${{ steps.tags.outputs.app_tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Сборка и пуш образа web
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.web
+          push: true
+          tags: ${{ steps.tags.outputs.web_tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Уведомление об успехе
+        run: |
+          echo " Образы опубликованы:"
+          echo "   ${{ env.APP_IMAGE }}:latest"
+          echo "   ${{ env.WEB_IMAGE }}:latest"
+          echo "   SHA-теги: ${{ env.APP_IMAGE }}:${GITHUB_SHA::7}, ${{ env.WEB_IMAGE }}:${GITHUB_SHA::7}"
