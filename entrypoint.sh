@@ -1,50 +1,26 @@
-
-
 #!/bin/bash
 set -e
 
-# Получаем логи запускаем тесты
-TEST_OUTPUT=$(docker run --rm testproj-app 2>&1) || true
+TEST_OUTPUT=$(docker run --rm test-repo-app:latest 2>&1) || true
+echo "$TEST_OUTPUT" > /usr/share/nginx/html/logs/test-output.txt
 
-ESCAPED_OUTPUT=$(echo "$TEST_OUTPUT" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')
-
-# Формируем HTML-отчёт 
-cat > /usr/share/nginx/html/index.html << EOF
+cat > /usr/share/nginx/html/index.html << HTMLEOF
 <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <title>Результаты тестов</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #1e1e1e;
-            color: #d4d4d4;
-            margin: 0;
-            padding: 20px;
-        }
-        h1 { border-bottom: 2px solid #007acc; padding-bottom: 10px; }
-        pre {
-            background: #2d2d2d;
-            padding: 15px;
-            border-radius: 5px;
-            overflow-x: auto;
-            font-family: 'Consolas', 'Monaco', monospace;
-            font-size: 13px;
-            white-space: pre-wrap;       /* Перенос длинных строк */
-            word-wrap: break-word;       /* Разрыв слов */
-        }
-        .timestamp { color: #808080; font-size: 12px; }
+        body { font-family: sans-serif; background: #1e1e1e; color: #d4d4d4; padding: 20px; }
+        pre { background: #2d2d2d; padding: 15px; border-radius: 5px; overflow-x: auto; }
     </style>
 </head>
 <body>
     <h1>Результаты тестов Candle</h1>
-    <p class="timestamp">Обновлено: $(date -u +"%Y-%m-%d %H:%M:%S UTC")</p>
-    <h2>Лог выполнения:</h2>
-    <pre>$ESCAPED_OUTPUT</pre>
+    <p>Обновлено: $(date -u +"%Y-%m-%d %H:%M:%S UTC")</p>
+    <pre>$TEST_OUTPUT</pre>
 </body>
 </html>
-EOF
+HTMLEOF
 
-#запускаем Nginx в режиме демона 
-exec nginx -g "daemon off;"
+exec "$@"
