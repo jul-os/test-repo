@@ -1,3 +1,5 @@
+
+
 FROM nginx:latest
 
 #установка Docker CLI чтобы контейнер мог выполнять docker logs и docker run

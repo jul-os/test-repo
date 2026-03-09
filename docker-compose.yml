@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.app
+    image: test-repo-app:latest
+    container_name: test-repo-app
+    # Тесты запускаются при старте контейнера CMD в Dockerfile.app
+
+  # Веб-сервис для отображения результатов
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    image: test-repo-web:latest
+    container_name: test-repo-web
+    ports:
+      - "80:80"  
+    volumes:
+      # Монтируем Docker-сокет чтобы web мог запускать app-контейнер
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      app:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
