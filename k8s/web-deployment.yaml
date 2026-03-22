@@ -1,0 +1,52 @@
+# k8s/web-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-repo-web
+  labels:
+    app: test-repo-web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-repo-web
+  template:
+    metadata:
+      labels:
+        app: test-repo-web
+    spec:
+      serviceAccountName: web-log-reader
+      containers:
+        - name: web
+          image: <your-dockerhub-username>/test-repo-web:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+          env:
+            - name: APP_POD_LABEL
+              value: "app=test-repo-app"
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          # Монтируем kubeconfig для доступа к API кластера (опционально, если kubectl не настроен в образе)
+          # В большинстве кластеров kubectl работает "из коробки" внутри пода с правильным ServiceAccount
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 30
+            periodSeconds: 20

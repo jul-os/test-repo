@@ -1,0 +1,33 @@
+# k8s/rbac.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: web-log-reader
+  namespace: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: pod-log-reader
+  namespace: default
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "pods/log"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["list"] # для поиска подов по лейблам
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: read-pod-logs
+  namespace: default
+subjects:
+  - kind: ServiceAccount
+    name: web-log-reader
+    namespace: default
+roleRef:
+  kind: Role
+  name: pod-log-reader
+  apiGroup: rbac.authorization.k8s.io

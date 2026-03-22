@@ -1,0 +1,22 @@
+# k8s/web-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: test-repo-web
+  labels:
+    app: test-repo-web
+spec:
+  type: LoadBalancer # Для облачных провайдеров (AWS, GCP, Azure)
+  # Для Minikube: type: NodePort + minikube tunnel
+  # Для локального тестирования: type: ClusterIP + kubectl port-forward
+  selector:
+    app: test-repo-web
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+      protocol: TCP
+  # Опционально: аннотации для конкретных облачных провайдеров
+  # annotations:
+  #   service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+  #   service.beta.kubernetes.io/do-loadbalancer-enable-proxy-protocol: "true"

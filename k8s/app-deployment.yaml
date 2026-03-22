@@ -1,0 +1,32 @@
+# k8s/app-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-repo-app
+  labels:
+    app: test-repo-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-repo-app
+  template:
+    metadata:
+      labels:
+        app: test-repo-app
+    spec:
+      restartPolicy: OnFailure # Перезапуск только при ошибке
+      containers:
+        - name: app
+          image: <your-dockerhub-username>/test-repo-app:latest
+          imagePullPolicy: Always
+          command: ["./build/candle_tests"]
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          # Тесты пишут в stdout/stderr — Kubernetes автоматически собирает эти логи
+          # Доступ к ним: kubectl logs -l app=test-repo-app

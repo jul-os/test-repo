@@ -2,6 +2,11 @@
 
 FROM nginx:latest
 
+# Установка kubectl
+RUN curl -LO "https://dl.k8s.io/release/$(curl -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \
+    chmod +x kubectl && \
+    mv kubectl /usr/local/bin/
+
 #установка Docker CLI чтобы контейнер мог выполнять docker logs и docker run
 RUN apt-get update && apt-get install -y \
     curl \
